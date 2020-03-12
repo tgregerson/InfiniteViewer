@@ -9,11 +9,11 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <ListView x:Name="ListViewMain" Margin="0,0,0,0" Padding="0,0,0,0" Loaded="Page_Loaded" SelectionMode="None">
+        <ListView x:Name="ListViewMain" Margin="0,0,0,0" Padding="0,0,0,0" Loaded="Page_Loaded" SelectionMode="None" KeyboardAcceleratorPlacementMode="Hidden">
             <ListView.Resources>
                 <DataTemplate x:Key="DataTemplateListViewMain">
                     <Grid Width="Auto" Height="Auto" Background="LightGray">
-                        <Image x:Name="MyImage" Source="{Binding}" Width="Auto" />
+                        <Image x:Name="MyImage" Source="{Binding}" Width="Auto"/>
                     </Grid>
                 </DataTemplate>
             </ListView.Resources>
@@ -28,7 +28,7 @@
                 <StaticResource ResourceKey="DataTemplateListViewMain" />
             </ListView.ItemTemplate>
             <ListView.KeyboardAccelerators>
-                <KeyboardAccelerator Key="Right" Modifiers="None" Invoked="Keyboard_Right"/>
+                <KeyboardAccelerator Key="Right" Modifiers="None" Invoked="Keyboard_Right" />
                 <KeyboardAccelerator Key="Left" Modifiers="None" Invoked="Keyboard_Left"/>
             </ListView.KeyboardAccelerators>
         </ListView>
