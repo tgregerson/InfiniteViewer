@@ -71,19 +71,19 @@ namespace InfiniteViewer
 
         protected override void OnActivated(IActivatedEventArgs args)
         {
-            String path = "";
-            if (args.Kind == ActivationKind.CommandLineLaunch)
-            {
-                var clArgs = args as CommandLineActivatedEventArgs;
-                var op = clArgs.Operation;
-                if (op != null) path = op.Arguments;
-            }
-
             Frame rootFrame = makeRootFrame();
-            rootFrame.Navigate(typeof(MainPage), path);
+            rootFrame.Navigate(typeof(MainPage), args);
             // Ensure the current window is active
             Window.Current.Activate();
             base.OnActivated(args);
+        }
+
+        protected override void OnFileActivated(FileActivatedEventArgs args)
+        {
+            Frame rootFrame = makeRootFrame();
+            rootFrame.Navigate(typeof(MainPage), args);
+            Window.Current.Activate();
+            base.OnFileActivated(args);
         }
 
         /// <summary>

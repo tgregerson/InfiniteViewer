@@ -1,63 +1,44 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-
-
-
-<Package
-  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
-  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
-  xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
-  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
-  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
-  IgnorableNamespaces="uap mp desktop rescap uap3">
-
-  <Identity
-    Name="3efc360b-74f9-4448-843e-0815d95c1b9d"
-    Publisher="CN=gregerso"
-    Version="1.0.0.0" />
-
-  <mp:PhoneIdentity PhoneProductId="3efc360b-74f9-4448-843e-0815d95c1b9d" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
-
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3" IgnorableNamespaces="uap mp desktop rescap uap3">
+  <Identity Name="3efc360b-74f9-4448-843e-0815d95c1b9d" Publisher="CN=gregerso" Version="1.0.0.0" />
+  <mp:PhoneIdentity PhoneProductId="3efc360b-74f9-4448-843e-0815d95c1b9d" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>InfiniteViewer</DisplayName>
     <PublisherDisplayName>gregerso</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
-
   <Dependencies>
     <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.0.0" MaxVersionTested="10.0.0.0" />
   </Dependencies>
-
   <Resources>
-    <Resource Language="x-generate"/>
+    <Resource Language="x-generate" />
   </Resources>
-
   <Applications>
-    <Application Id="App"
-      Executable="$targetnametoken$.exe"
-      EntryPoint="InfiniteViewer.App">
-      <uap:VisualElements
-        DisplayName="InfiniteViewer"
-        Square150x150Logo="Assets\Square150x150Logo.png"
-        Square44x44Logo="Assets\Square44x44Logo.png"
-        Description="Infinite Viewer"
-        BackgroundColor="transparent">
-        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"/>
+    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="InfiniteViewer.App">
+      <uap:VisualElements DisplayName="InfiniteViewer" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png" Description="Infinite Viewer" BackgroundColor="transparent">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" ShortName="InfinityViewer" Square310x310Logo="Assets\LargeTile.png" Square71x71Logo="Assets\SmallTile.png">
+        </uap:DefaultTile>
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
       <Extensions>
-        <uap3:Extension
-          Category="windows.appExecutionAlias"
-          Executable="InfiniteViewer.exe"
-          EntryPoint="InfiniteViewer.App">
+        <uap3:Extension Category="windows.appExecutionAlias" Executable="InfiniteViewer.exe" EntryPoint="InfiniteViewer.App">
           <uap3:AppExecutionAlias>
             <desktop:ExecutionAlias Alias="InfiniteViewer.exe" />
           </uap3:AppExecutionAlias>
         </uap3:Extension>
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap3:FileTypeAssociation Name="imagefiles">
+            <uap:SupportedFileTypes>
+              <uap:FileType>.bmp</uap:FileType>
+              <uap:FileType>.jpg</uap:FileType>
+              <uap:FileType>.png</uap:FileType>
+              <uap:FileType>.gif</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap3:FileTypeAssociation>
+        </uap:Extension>
       </Extensions>
     </Application>
   </Applications>
-
   <Capabilities>
     <Capability Name="internetClient" />
     <rescap:Capability Name="broadFileSystemAccess" />

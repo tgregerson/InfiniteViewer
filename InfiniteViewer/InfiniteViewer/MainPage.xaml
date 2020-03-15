@@ -9,11 +9,11 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <ListView x:Name="ListViewMain" Margin="0,0,0,0" Padding="0,0,0,0" Loaded="Page_Loaded" SelectionMode="None" KeyboardAcceleratorPlacementMode="Hidden">
+        <ListView x:Name="ListViewMain" Margin="0,0,0,0" Padding="0,0,0,0" Loaded="Page_Loaded" SelectionMode="None" KeyboardAcceleratorPlacementMode="Hidden" ContainerContentChanging="ListViewMain_ContainerContentChanging" HorizontalAlignment="Center">
             <ListView.Resources>
                 <DataTemplate x:Key="DataTemplateListViewMain">
-                    <Grid Width="Auto" Height="Auto" Background="LightGray">
-                        <Image x:Name="MyImage" Source="{Binding}" Width="Auto"/>
+                    <Grid Width="9999" Height="Auto" HorizontalAlignment="Center">
+                        <Image x:Name="MyImage" Source="{Binding Bitmap}" Width="1000" HorizontalAlignment="Center"/>
                     </Grid>
                 </DataTemplate>
             </ListView.Resources>
