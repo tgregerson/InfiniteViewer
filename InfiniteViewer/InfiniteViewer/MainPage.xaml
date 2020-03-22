@@ -14,7 +14,7 @@
             <ListView.Resources>
                 <DataTemplate x:Key="DataTemplateListViewMain" x:DataType="local:ImageElement">
                     <Grid x:Name="ImageGrid" Background="LightGray">
-                        <Image x:Name="MyImage" Source="{Binding Bitmap}" Width="{x:Bind Path=local:MainPage.GlobalImageProperties.Width, Mode=OneWay}" />
+                        <Image x:Name="MyImage" Source="{Binding Bitmap}" Width="{x:Bind Path=local:Options.Instance.ImageOptions.Width, Mode=OneWay}" />
                     </Grid>
                 </DataTemplate>
             </ListView.Resources>

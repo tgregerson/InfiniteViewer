@@ -123,6 +123,18 @@
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Source\CollectionNavigator.cs" />
+    <Compile Include="Source\CollectionCache.cs" />
+    <Compile Include="Source\ImageCollection.cs" />
+    <Compile Include="Source\FolderNavigator.cs" />
+    <Compile Include="Source\ImageSource.cs" />
+    <Compile Include="Source\StreamSource.cs" />
+    <Compile Include="Source\FolderQuery.cs" />
+    <Compile Include="Source\FileErrorHelper.cs" />
+    <Compile Include="Source\LRUCache.cs" />
+    <Compile Include="Source\WorkQueue.cs" />
+    <Compile Include="Source\WallClockMeasurement.cs" />
+    <Compile Include="Source\Options.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
