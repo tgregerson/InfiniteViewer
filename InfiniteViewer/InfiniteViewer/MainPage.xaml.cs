@@ -2,15 +2,19 @@
 using Microsoft.Toolkit.Uwp;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.Activation;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.Storage.Pickers;
 using Windows.Storage.Search;
 using Windows.UI.Core;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media.Imaging;
@@ -22,11 +26,94 @@ using Windows.UI.Xaml.Media;
 using System.Collections.Concurrent;
 
 using FileElement = Windows.Storage.StorageFile;
-using Windows.ApplicationModel.Activation;
 
 namespace InfiniteViewer
 {
-    class WallClockMeasurement
+    public enum SortOrder
+    {
+        NameAscending,
+        NameDescending,
+        DateModifiedAscending,
+        DateModifiedDescending,
+        Random,
+    }
+
+    public class SortOptions : INotifyPropertyChanged
+    {
+        public void SetOrder(SortOrder o)
+        {
+            _order = o;
+            IsNameAscending = (o == SortOrder.NameAscending);
+            IsNameDescending = (o == SortOrder.NameDescending);
+            IsDateModifiedAscending = (o == SortOrder.DateModifiedAscending);
+            IsDateModifiedDescending = (o == SortOrder.DateModifiedDescending);
+            IsRandom = (o == SortOrder.Random);
+        }
+        public SortOrder Order() { return _order; }
+
+        public bool IsNameAscending
+        {
+            get { return _order == SortOrder.NameAscending; }
+            set { this.OnPropertyChanged(); }
+        }
+        public bool IsNameDescending
+        {
+            get { return _order == SortOrder.NameDescending; }
+            set { this.OnPropertyChanged(); }
+        }
+        public bool IsDateModifiedAscending
+        {
+            get { return _order == SortOrder.DateModifiedAscending; }
+            set { this.OnPropertyChanged(); }
+        }
+        public bool IsDateModifiedDescending
+        {
+            get { return _order == SortOrder.DateModifiedDescending; }
+            set { this.OnPropertyChanged(); }
+        }
+        public bool IsRandom
+        {
+            get { return _order == SortOrder.Random; }
+            set { this.OnPropertyChanged(); }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged = delegate { };
+
+        public void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private SortOrder _order = SortOrder.NameAscending;
+    }
+
+    public class Options
+    {
+        public static Options Instance { get; } = new Options();
+
+        public SortOptions FileSortOptions { get; set; } = new SortOptions();
+        public SortOptions FolderSortOptions { get; set; } = new SortOptions();
+    }
+
+    public class ImageProperties : INotifyPropertyChanged
+    {
+        public double Width {
+            get { return this._width; }
+            set { _width = value; this.OnPropertyChanged(); }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged = delegate { };
+
+        public void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            // Raise the PropertyChanged event, passing the name of the property whose value has changed.
+            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private double _width = double.NaN;
+    }
+
+    public class WallClockMeasurement
     {
         public WallClockMeasurement()
         {
@@ -128,6 +215,15 @@ namespace InfiniteViewer
             lock(_mutex) { return _map.ContainsKey(key); }
         }
 
+        public void Flush()
+        {
+            lock(_mutex)
+            {
+                _list.Clear();
+                _map.Clear();
+            }
+        }
+
         private class Entry
         {
             public V value;
@@ -215,31 +311,37 @@ namespace InfiniteViewer
             return fileTypeFilter;
         }
 
+        public static SortEntry MakeSortEntry(SortOptions opts)
+        {
+            var sort = new SortEntry();
+            if (opts.IsNameDescending || opts.IsDateModifiedDescending)
+                sort.AscendingOrder = false;
+            else
+                sort.AscendingOrder = true;
+            if (opts.IsDateModifiedAscending || opts.IsDateModifiedDescending)
+                sort.PropertyName = "System.DateModified";
+            else
+                sort.PropertyName = "System.FileName";
+            return sort;
+        }
+
         public static QueryOptions GetFileQueryOptions()
         {
-            var fileOptions = new QueryOptions(CommonFileQuery.OrderByName, FileFilter());
-            fileOptions.IndexerOption = IndexerOption.UseIndexerWhenAvailable;
+            var opts = Options.Instance.FileSortOptions;
+            var fileOptions = new QueryOptions(CommonFileQuery.DefaultQuery, FileFilter());
+            fileOptions.SortOrder.Clear();
+            fileOptions.SortOrder.Add(MakeSortEntry(opts));
+            fileOptions.FolderDepth = FolderDepth.Shallow;
             return fileOptions;
         }
 
-        public static async Task<List<StorageFile>> GetFilesAsync(StorageFolder folder)
+        public static QueryOptions GetFolderQueryOptions()
         {
-            var files = new List<StorageFile>();
-            if (folder != null)
-            {
-                await FileErrorHelper.RunMethodAsync(async delegate (String path)
-                {
-                    var queryOptions = GetFileQueryOptions();
-                    queryOptions.FolderDepth = FolderDepth.Deep;
-                    var query = folder.CreateFileQueryWithOptions(queryOptions);
-                    var clock = new WallClockMeasurement();
-                    IReadOnlyList<StorageFile> unsorted = await query.GetFilesAsync();
-                    clock.Report(0, "File query");
-                    files = unsorted.OrderBy(f => f.Path).ToList();
-                    Debug.WriteLine("Got " + files.Count() + " files");
-                }, folder.Path);
-            }
-            return files;
+            var opts = Options.Instance.FolderSortOptions;
+            var folderOptions = new QueryOptions(CommonFolderQuery.DefaultQuery);
+            folderOptions.FolderDepth = FolderDepth.Deep;
+            folderOptions.SortOrder.Add(MakeSortEntry(opts));
+            return folderOptions;
         }
 
         public static async Task<List<StorageFolder>> GetSubfolders(StorageFolder parent)
@@ -251,67 +353,12 @@ namespace InfiniteViewer
                 var clock = new WallClockMeasurement();
                 var folderOptions = new QueryOptions(CommonFolderQuery.DefaultQuery);
                 folderOptions.FolderDepth = FolderDepth.Deep;
-                // TODO option
-                folderOptions.IndexerOption = IndexerOption.UseIndexerWhenAvailable;
                 var folderQuery = parent.CreateFolderQueryWithOptions(folderOptions);
                 var unsortedFolders = await folderQuery.GetFoldersAsync();
                 subfolders = unsortedFolders.OrderBy(f => f.Path).ToList();
                 clock.Report(0, "Querying " + subfolders.Count() + " subfolders of " + parent.Path);
             }, parent.Path);
             return subfolders;
-        }
-
-        public static List<StorageFileQueryResult> GetFileQueries(List<StorageFolder> folders)
-        {
-            var queries = new List<StorageFileQueryResult>();
-            var clock = new WallClockMeasurement();
-            var fileOptions = GetFileQueryOptions();
-            foreach (StorageFolder f in folders)
-                queries.Add(f.CreateFileQueryWithOptions(fileOptions));
-            clock.Report(1, "Creating file queries");
-            return queries;
-        }
-
-        public static async Task<List<StorageFile>> GetFilesAsyncV2(StorageFolder folder)
-        {
-            var files = new List<StorageFile>();
-            if (folder != null)
-            {
-                await FileErrorHelper.RunMethodAsync(async delegate (String path)
-                {
-                    var clock = new WallClockMeasurement();
-                    var folderOptions = new QueryOptions(CommonFolderQuery.DefaultQuery);
-                    folderOptions.FolderDepth = FolderDepth.Deep;
-                    var folderQuery = folder.CreateFolderQueryWithOptions(folderOptions);
-                    var unsortedFolders = await folderQuery.GetFoldersAsync();
-                    var folders = unsortedFolders.OrderBy(f => f.Path).ToList();
-                    folders.Add(folder);
-                    clock.Report(0, "Querying " + folders.Count() + " folders");
-
-                    var fileOptions = new QueryOptions(CommonFileQuery.OrderByName, FileFilter());
-                    var folderFileQueries = new List<StorageFileQueryResult>();
-                    foreach (StorageFolder f in folders)
-                    {
-                        folderFileQueries.Add(f.CreateFileQueryWithOptions(fileOptions));
-                    }
-                    var getFilesTasks = new List<Task<IReadOnlyList<StorageFile>>>();
-                    foreach (var q in folderFileQueries)
-                    {
-                        getFilesTasks.Add(q.GetFilesAsync().AsTask());
-                    }
-                    clock.Report(1, "Starting file queries");
-
-                    var fileLists = await Task.WhenAll(getFilesTasks.ToArray());
-                    clock.Report(0, "Querying files");
-
-                    foreach (var fl in fileLists)
-                    {
-                        files.AddRange(fl);
-                    }
-                    Debug.WriteLine("Got " + files.Count() + " files");
-                }, folder.Path);
-            }
-            return files;
         }
     }
 
@@ -322,21 +369,232 @@ namespace InfiniteViewer
         public IRandomAccessStreamWithContentType Stream { get; set; }
     }
 
+
+    public abstract class FolderQuery
+    {
+        protected FolderQuery(StorageFileQueryResult q)
+        {
+            _query = q;
+        }
+
+        public abstract void Launch();
+        public abstract Task<bool> HasAtLeast(int n);
+        public abstract Task<int> Count();
+        public abstract Task<IReadOnlyList<StreamElement>> GetFiles(int startOffset, int endOffset);
+
+        protected async Task<IReadOnlyList<StreamElement>> OpenFileStreams(uint startIndex, uint count)
+        {
+            var files = await _query.GetFilesAsync(startIndex, count);
+            var openTasks = new List<Task<StreamElement>>();
+            for (int i = 0; i < files.Count; ++i)
+            {
+                var type = files[i].FileType;
+                if (type != ".url" && type != ".lnk")
+                    openTasks.Add(OpenFileStream(files[i]));
+            }
+            return await Task.WhenAll(openTasks);
+        }
+
+        protected async Task<StreamElement> OpenFileStream(StorageFile f)
+        {
+            StreamElement s = new StreamElement();
+            s.File = f;
+            s.Stream = await f.OpenReadAsync();
+            return s;
+        }
+
+        private StorageFileQueryResult _query;
+    }
+
+    public class TwoPhaseFolderQuery : FolderQuery
+    {
+        public TwoPhaseFolderQuery(StorageFileQueryResult query, uint numInitial) : base(query)
+        {
+            _numInitial = numInitial;
+        }
+
+        public override void Launch() { LaunchInitial(); }
+
+        public override async Task<bool> HasAtLeast(int n)
+        {
+            var i = await InitialCount();
+            if (i >= n) return true;
+            var r = await RemainingCount();
+            return (i + r) >= n;
+        }
+
+        public override async Task<int> Count()
+        {
+            var i = await InitialCount();
+            var r = await RemainingCount();
+            return i + r;
+        }
+
+        public override async Task<IReadOnlyList<StreamElement>> GetFiles(int startOffset, int endOffset)
+        {
+            var ret = new List<StreamElement>();
+            var initial = await GetInitial();
+            int offset = startOffset;
+            for (; offset < endOffset && offset < initial.Count; ++offset)
+                ret.Add(initial[offset]);
+            if (offset >= endOffset) return ret;
+            var remaining = await GetRemaining();
+            offset = Math.Max(offset, startOffset);
+            for (int i = offset - initial.Count; (i < remaining.Count) && ((offset + i) < endOffset); ++i)
+                ret.Add(remaining[i]);
+            return ret;
+        }
+
+        private void LaunchInitial()
+        {
+            lock (_mutex)
+            {
+                if (_initial == null)
+                    _initial = OpenFileStreams(0, _numInitial);
+            }
+        }
+
+        private void LaunchRemaining()
+        {
+            lock (_mutex)
+            {
+                if (_remaining == null)
+                    _remaining = OpenFileStreams(_numInitial, uint.MaxValue);
+            }
+        }
+
+        private async Task<IReadOnlyList<StreamElement>> GetInitial()
+        {
+            if (InitialDone) return _initial.Result;
+            LaunchInitial();
+            var ret = await _initial;
+            InitialDone = true;
+            if (ret.Count < _numInitial)
+                RemainingUnnecessary = true;
+            else if (_remaining == null)
+                LaunchRemaining();
+            return ret;
+        }
+
+        private async Task<int> InitialCount()
+        {
+            var i = await GetInitial();
+            return i.Count;
+        }
+
+        private async Task<IReadOnlyList<StreamElement>> GetRemaining()
+        {
+            if (RemainingUnnecessary) return new List<StreamElement>();
+            if (RemainingDone) return _remaining.Result;
+            LaunchRemaining();
+            var ret = await _remaining;
+            RemainingDone = true;
+            return ret;
+        }
+
+        private async Task<int> RemainingCount()
+        {
+            if (RemainingUnnecessary) return 0;
+            var r = await GetRemaining();
+            return r.Count;
+        }
+
+        private bool Finished() { return InitialDone && RemainingDone; }
+
+        private bool InitialDone { get; set; } = false;
+        private bool RemainingDone { get; set; } = false;
+        private bool RemainingUnnecessary { get; set; } = false;
+
+        private uint _numInitial;
+
+        private object _mutex = new object();
+        private Task<IReadOnlyList<StreamElement>> _initial = null;
+        private Task<IReadOnlyList<StreamElement>> _remaining = null;
+    }
+
+    public class ShuffledFolderQuery : FolderQuery
+    {
+        public ShuffledFolderQuery(StorageFileQueryResult query) : base(query)
+        {
+        }
+
+        public override void Launch() {
+            lock (_mutex)
+            {
+                if (_open == null)
+                    _open = GetShuffledStreams();
+            }
+        }
+
+        public override async Task<bool> HasAtLeast(int n)
+        {
+            var i = await Count();
+            return i >= n;
+        }
+
+        public override async Task<int> Count()
+        {
+            var i = await GetAll();
+            return i.Count;
+        }
+
+        public override async Task<IReadOnlyList<StreamElement>> GetFiles(int startOffset, int endOffset)
+        {
+            var ret = new List<StreamElement>();
+            var initial = await GetAll();
+            int offset = startOffset;
+            for (; offset < endOffset && offset < initial.Count; ++offset)
+                ret.Add(initial[offset]);
+            return ret;
+        }
+
+        private async Task<IReadOnlyList<StreamElement>> GetAll()
+        {
+            if (Done) return _open.Result;
+            Launch();
+            var ret = await _open;
+            Done = true;
+            return ret;
+        }
+
+        private async Task<IReadOnlyList<StreamElement>> GetShuffledStreams()
+        {
+            var streams = new List<StreamElement>();
+            streams.AddRange(await OpenFileStreams(0, uint.MaxValue));
+            var rnd = new Random();
+            for (int i = streams.Count - 1; i > 1; i--)
+            {
+                int r = rnd.Next(i + 1);
+                var v = streams[r];
+                streams[r] = streams[i];
+                streams[i] = v;
+            }
+            return streams;
+        }
+
+        private bool Done { get; set; } = false;
+
+        private object _mutex = new object();
+        private Task<IReadOnlyList<StreamElement>> _open = null;
+    }
+
     public class StreamSource : IIncrementalSource<StreamElement>
     {
         public StreamSource(List<StorageFolder> folders)
         {
             var options = FileFetcher.GetFileQueryOptions();
-            options.FolderDepth = FolderDepth.Shallow;
             _queries = new FolderQuery[folders.Count];
             const int kMaxInitialQueries = 1;
             for (int i = 0; i < folders.Count; ++i)
             {
                 var query = folders[i].CreateFileQueryWithOptions(options);
-                _queries[i] = new FolderQuery(query, kNumPrimaryImages);
+                if (Options.Instance.FileSortOptions.IsRandom)
+                    _queries[i] = new ShuffledFolderQuery(query);
+                else
+                    _queries[i] = new TwoPhaseFolderQuery(query, kNumPrimaryImages);
                 if (i < kMaxInitialQueries)
                 {
-                    _queries[i].LaunchInitial();
+                    _queries[i].Launch();
                 }
             }
         }
@@ -364,14 +622,13 @@ namespace InfiniteViewer
             }
 
             int frontExtra = startFileIndex - queriesStartFileIndex;
-            int desired = maxFileIndex - startFileIndex;
+            int desired = maxFileIndex - startFileIndex;         
             for (int i = startQuery; i < _queries.Count(); ++i)
             {
+                int deficit = desired - (files.Count() - frontExtra);
+                if (deficit <= 0) break;
                 var q = _queries[i];
-                files.AddRange(await q.GetInitial());
-                if ((files.Count - frontExtra) >= desired) break;  // Done
-                files.AddRange(await q.GetRemaining());
-                if ((files.Count - frontExtra) >= desired) break;  // Done
+                files.AddRange(await q.GetFiles(0, deficit));
             }
             int numToTake = Math.Min(desired, files.Count - frontExtra);
             Interlocked.Add(ref _loadCount, numToTake);
@@ -381,131 +638,6 @@ namespace InfiniteViewer
             return trimmed;
         }
 
-        private class FolderQuery
-        {
-            public FolderQuery(StorageFileQueryResult query, uint numInitial)
-            {
-                _numInitial = numInitial;
-                _query = query;
-            }
-
-            public void LaunchInitial()
-            {
-                lock (_mutex)
-                {
-                    if (_initial == null)
-                        _initial = OpenFileStreams(0, _numInitial);
-                }
-            }
-
-            private async Task<IReadOnlyList<StreamElement>> OpenFileStreams(uint startIndex, uint count)
-            {
-                var files = await _query.GetFilesAsync(startIndex, count);
-                var openTasks = new List<Task<StreamElement>>();
-                for (int i = 0; i < files.Count; ++i)
-                {
-                    var type = files[i].FileType;
-                    if (type != ".url" && type != ".lnk")
-                        openTasks.Add(OpenFileStream(files[i]));
-                }
-                return await Task.WhenAll(openTasks);
-            }
-
-            private async Task<StreamElement> OpenFileStream(StorageFile f)
-            {
-                StreamElement s = new StreamElement();
-                s.File = f;
-                s.Stream = await f.OpenReadAsync();
-                return s;
-            }
-
-            private void LaunchRemaining()
-            {
-                lock (_mutex)
-                {
-                    if (_remaining == null)
-                        _remaining = OpenFileStreams(_numInitial, uint.MaxValue);
-                }
-            }
-
-            public async Task<IReadOnlyList<StreamElement>> GetFiles(int startOffset, int endOffset)
-            {
-                var ret = new List<StreamElement>();
-                var initial = await GetInitial();
-                int offset = startOffset;
-                for (; offset < endOffset && offset < initial.Count; ++offset)
-                    ret.Add(initial[offset]);
-                if (offset >= endOffset) return ret;
-                var remaining = await GetRemaining();
-                offset = Math.Max(offset, startOffset);
-                for (int i = offset - initial.Count; (i < remaining.Count) && ((offset + i) < endOffset); ++i)
-                    ret.Add(remaining[i]);
-                return ret;
-            }
-
-            public async Task<IReadOnlyList<StreamElement>> GetInitial()
-            {
-                if (InitialDone) return _initial.Result;
-                LaunchInitial();
-                var ret = await _initial;
-                InitialDone = true;
-                if (ret.Count < _numInitial)
-                    RemainingUnnecessary = true;
-                else if (_remaining == null)
-                    LaunchRemaining();
-                return ret;
-            }
-
-            public async Task<int> InitialCount()
-            {
-                var i = await GetInitial();
-                return i.Count;
-            }
-
-            public async Task<IReadOnlyList<StreamElement>> GetRemaining()
-            {
-                if (RemainingUnnecessary) return new List<StreamElement>();
-                if (RemainingDone) return _remaining.Result;
-                LaunchRemaining();
-                var ret = await _remaining;
-                RemainingDone = true;
-                return ret;
-            }
-
-            public async Task<int> RemainingCount()
-            {
-                if (RemainingUnnecessary) return 0;
-                var r = await GetRemaining();
-                return r.Count;
-            }
-
-            public bool Finished() { return InitialDone && RemainingDone; }
-            public async Task<int> Count()
-            {
-                var i = await InitialCount();
-                var r = await RemainingCount();
-                return i + r;
-            }
-
-            public async Task<bool> HasAtLeast(int n)
-            {
-                var i = await InitialCount();
-                if (i >= n) return true;
-                var r = await RemainingCount();
-                return (i + r) >= n;
-            }
-
-            public bool InitialDone { get; set; } = false;
-            public bool RemainingDone { get; set; } = false;
-            public bool RemainingUnnecessary { get; set; } = false;
-
-            private uint _numInitial;
-            private StorageFileQueryResult _query;
-
-            private object _mutex = new object();
-            private Task<IReadOnlyList<StreamElement>> _initial = null;
-            private Task<IReadOnlyList<StreamElement>> _remaining = null;
-        }
 
         private Int32 _loadCount = 0;
 
@@ -533,6 +665,10 @@ namespace InfiniteViewer
             var files = await _streamSource.GetPagedItemsAsync(pageIndex, pageSize, token);
             foreach (var file in files)
             {
+                if (pageIndex < 10)
+                {
+                    Debug.WriteLine("Opening " + file.File.Path + " : " + pageIndex + " " + pageSize);
+                }
                 tasks.Add(OpenImageFromStream(file));
             }
             var items = await Task.WhenAll(tasks.ToArray());
@@ -567,7 +703,6 @@ namespace InfiniteViewer
             {
                 if (!FileErrorHelper.SuppressImageErrors)
                 {
-                    Debug.WriteLine("Exception when stream for file " + stream.File.Path + ": " + e.ToString());
                     await FileErrorHelper.RaiseImageErrorDialog(stream.File.Path);
                 }
             }
@@ -668,9 +803,13 @@ namespace InfiniteViewer
     {
         public const int kPageSize = 1;
 
-        public ImageCollection() : this("", new List<StorageFolder>()) { }
-        public ImageCollection(String name, List<StorageFolder> folders) : this(new StreamSource(folders)) {
-            Name = name;
+        public ImageCollection() : this(null, new List<StorageFolder>()) { }
+        public ImageCollection(StorageFolder root, List<StorageFolder> folders) : this(new StreamSource(folders)) {
+            if (root != null)
+                _name = root.Path;
+            else
+                _name = "";
+            _root = root;
         }
 
         public ImageSource GetSource() { return _imageSource; }
@@ -680,24 +819,25 @@ namespace InfiniteViewer
         }
         private ImageCollection(StreamSource ss) : this(new ImageSource(ss)) {}
 
-        public String Name { get; set; }
+        public String Name() { return _name; }
+        public StorageFolder Root() { return _root;  }
 
+        private String _name;
+        private StorageFolder _root;
         private ImageSource _imageSource { get; set; }
     }
 
     public class ImageCollectionFactory
     {
-        public static async Task<ImageCollection> MakeCollectionAsync(StorageFolder folder)
+        public static async Task<ImageCollection> MakeCollectionAsync(StorageFolder root)
         {
-            var folders = await FileFetcher.GetSubfolders(folder);
+            var folders = await FileFetcher.GetSubfolders(root);
             folders = folders.OrderBy(f => f.Path).ToList();
-            String name = "";
-            if (folder != null)
+            if (root != null)
             {
-                folders.Add(folder);
-                name = folder.Path;
+                folders.Add(root);
             }
-            var collection = new ImageCollection(name, folders);
+            var collection = new ImageCollection(root, folders);
             return collection;
         }
     }
@@ -731,8 +871,10 @@ namespace InfiniteViewer
 
         public void Add(ImageCollection c)
         {
-            _cachedCollections.InsertIfNotPresent(c.Name, c);
+            _cachedCollections.InsertIfNotPresent(c.Name(), c);
         }
+
+        public void Flush() { _cachedCollections.Flush(); }
 
         public bool Contains(String path) { return _cachedCollections.Contains(path);  }
 
@@ -804,7 +946,7 @@ namespace InfiniteViewer
                 _populator.Add(_folderNavigator.CurrentOffset(i));
             for (int i = 1; i <= _numBehind; ++i)
                 _populator.Add(_folderNavigator.CurrentOffset(-i));
-            Debug.WriteLine("Set CURRENT to " + Current().Name);
+            Debug.WriteLine("Set CURRENT to " + Current().Name());
             await nav;
         }
 
@@ -824,7 +966,7 @@ namespace InfiniteViewer
                 _folderNavigator.GoNext();
                 _populator.Add(_folderNavigator.CurrentOffset((int)_numAhead));
                 _current = await _cache.GetOrCreateCollectionAsync(_folderNavigator.Current()).ConfigureAwait(false);
-                Debug.WriteLine("Set CURRENT to " + _current.Name);
+                Debug.WriteLine("Set CURRENT to " + _current.Name());
                 return true;
             }
             return false;
@@ -838,10 +980,17 @@ namespace InfiniteViewer
                 _folderNavigator.GoPrevious();
                 _populator.Add(_folderNavigator.CurrentOffset(-(int)_numBehind));
                 _current = await _cache.GetOrCreateCollectionAsync(_folderNavigator.Current()).ConfigureAwait(false);
-                Debug.WriteLine("Set CURRENT to " + Current().Name);
+                Debug.WriteLine("Set CURRENT to " + Current().Name());
                 return true;
             }
             return false;
+        }
+
+        public async Task Reset()
+        {
+            var currentFolder = _folderNavigator.Current();
+            _cache.Flush();
+            await SetCurrentCollection(currentFolder);
         }
 
         private async Task<ImageCollection> PreloadCollection(StorageFolder folder)
@@ -865,6 +1014,8 @@ namespace InfiniteViewer
             this.InitializeComponent();
             UpdateViewToCurrentCollection();
         }
+
+        public static ImageProperties GlobalImageProperties = new ImageProperties();
 
         private async Task debugDialog(String message)
         {
@@ -943,18 +1094,18 @@ namespace InfiniteViewer
             var current = _collectionNavigator.Current();
             NextFolderButton.IsEnabled = _collectionNavigator.CanGoNext();
             PreviousFolderButton.IsEnabled = _collectionNavigator.CanGoPrevious();
-            var appView = Windows.UI.ViewManagement.ApplicationView.GetForCurrentView();
+            var appView = ApplicationView.GetForCurrentView();
             ListViewMain.ItemsSource = current;
             UpdateTitle();
-            Debug.WriteLine("Updated UI to " + current.Name);
+            Debug.WriteLine("Updated UI to " + current.Name());
         }
 
         private void UpdateTitle()
         {
             var current = _collectionNavigator.Current();
-            var appView = Windows.UI.ViewManagement.ApplicationView.GetForCurrentView();
+            var appView = ApplicationView.GetForCurrentView();
             string indexString = "";
-            string nameString = current.Name;
+            string nameString = current.Name();
             var panel = GetChild<ItemsStackPanel>(ListViewMain);
             if (panel != null)
             {
@@ -998,6 +1149,25 @@ namespace InfiniteViewer
             _navSemaphore.Release();
         }
 
+        private bool IsFullScreen()
+        {
+            return ApplicationView.GetForCurrentView().IsFullScreenMode;
+        }
+        private bool TryEnterFullScreen()
+        {
+            var actualWidth = ListViewMain.ActualWidth;
+            if (ApplicationView.GetForCurrentView().TryEnterFullScreenMode())
+            {
+                MainPage.GlobalImageProperties.Width = actualWidth;
+                return true;
+            }
+            return false;
+        }
+        private void ExitFullScreen()
+        {
+            MainPage.GlobalImageProperties.Width = double.NaN;
+            ApplicationView.GetForCurrentView().ExitFullScreenMode();
+        }
 
         private async void SelectFolder_Click(object sender, RoutedEventArgs e)
         {
@@ -1012,6 +1182,35 @@ namespace InfiniteViewer
             MovePrevious();
         }
 
+        private async Task SetFileSortOrder(SortOrder order)
+        {
+            await _navSemaphore.WaitAsync();
+            Options.Instance.FileSortOptions.SetOrder(order);
+            await _collectionNavigator.Reset();
+            UpdateViewToCurrentCollection();
+            _navSemaphore.Release();
+        }
+        private async void FileSortNameAscending_Click(object sender, RoutedEventArgs e)
+        {
+            await SetFileSortOrder(SortOrder.NameAscending);
+        }
+        private async void FileSortNameDescending_Click(object sender, RoutedEventArgs e)
+        {
+            await SetFileSortOrder(SortOrder.NameDescending);
+        }
+        private async void FileSortDateModifiedAscending_Click(object sender, RoutedEventArgs e)
+        {
+            await SetFileSortOrder(SortOrder.DateModifiedAscending);
+        }
+        private async void FileSortDateModifiedDescending_Click(object sender, RoutedEventArgs e)
+        {
+            await SetFileSortOrder(SortOrder.DateModifiedDescending);
+        }
+        private async void FileSortRandom_Click(object sender, RoutedEventArgs e)
+        {
+            await SetFileSortOrder(SortOrder.Random);
+        }
+
         private void Keyboard_Right(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
         {
             MoveNext();
@@ -1020,12 +1219,22 @@ namespace InfiniteViewer
         {
             MovePrevious();
         }
+        private void Keyboard_Enter(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            if (IsFullScreen())
+                ExitFullScreen();
+            else
+                TryEnterFullScreen();
+        }
+        private void Keyboard_Escape(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            ExitFullScreen();
+        }
 
         private void ListViewMain_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
             UpdateTitle();
         }
-
 
         private static T GetChild<T>(DependencyObject o) where T : DependencyObject
         {
@@ -1045,10 +1254,12 @@ namespace InfiniteViewer
             for (int i = 0; i < VisualTreeHelper.GetChildrenCount(o); i++)
             {
                 var child = VisualTreeHelper.GetChild(o, i);
-                if (child != null && child is T) ret.Add(child as T);
+                var result = GetChild<T>(child);
+                if (result != null && result is T) ret.Add(result as T);
             }
             return ret;
         }
+
 
         private SemaphoreSlim _navSemaphore = new SemaphoreSlim(1, 1);
         private CollectionNavigator _collectionNavigator = new CollectionNavigator(4, 2);

@@ -9,19 +9,45 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid />
         <ListView x:Name="ListViewMain" Margin="0,0,0,0" Padding="0,0,0,0" Loaded="Page_Loaded" SelectionMode="None" KeyboardAcceleratorPlacementMode="Hidden" ContainerContentChanging="ListViewMain_ContainerContentChanging">
             <ListView.Resources>
-                <DataTemplate x:Key="DataTemplateListViewMain">
-                    <Grid Width="Auto" Height="Auto" Background="LightGray">
-                        <Image x:Name="MyImage" Source="{Binding Bitmap}" Width="Auto"/>
+                <DataTemplate x:Key="DataTemplateListViewMain" x:DataType="local:ImageElement">
+                    <Grid x:Name="ImageGrid" Background="LightGray">
+                        <Image x:Name="MyImage" Source="{Binding Bitmap}" Width="{x:Bind Path=local:MainPage.GlobalImageProperties.Width, Mode=OneWay}" />
                     </Grid>
                 </DataTemplate>
             </ListView.Resources>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment"  Value="Center"></Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
             <ListView.ContextFlyout>
                 <MenuFlyout>
-                    <MenuFlyoutItem Text="Select Folder" Click="SelectFolder_Click"/>
-                    <MenuFlyoutItem Name="NextFolderButton" Text="Next Folder" Click="NextFolder_Click" IsEnabled="{Binding}" />
-                    <MenuFlyoutItem Name="PreviousFolderButton" Text="Previous Folder" Click="PreviousFolder_Click" IsEnabled="{Binding}"/>
+                    <MenuFlyoutItem Text="Open Folder" Click="SelectFolder_Click">
+                        <MenuFlyoutItem.Icon>
+                            <FontIcon Glyph="&#xE19C;" />
+                        </MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem Name="NextFolderButton" Text="Next Folder" Click="NextFolder_Click" IsEnabled="{Binding}">
+                        <MenuFlyoutItem.Icon>
+                            <FontIcon Glyph="&#xE111;" />
+                        </MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem Name="PreviousFolderButton" Text="Previous Folder" Click="PreviousFolder_Click" IsEnabled="{Binding}">
+                        <MenuFlyoutItem.Icon>
+                            <FontIcon Glyph="&#xE112;" />
+                        </MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutSeparator/>
+                    <MenuFlyoutSubItem Name="FileSortingSubMenu" Text="File Sorting">
+                        <ToggleMenuFlyoutItem Text="Name, ascending" Click="FileSortNameAscending_Click" IsChecked="{x:Bind local:Options.Instance.FileSortOptions.IsNameAscending, Mode=OneWay}"/>
+                        <ToggleMenuFlyoutItem Text="Name, descending" Click="FileSortNameDescending_Click" IsChecked="{x:Bind local:Options.Instance.FileSortOptions.IsNameDescending, Mode=OneWay}"/>
+                        <ToggleMenuFlyoutItem Text="Date modified, ascending" Click="FileSortDateModifiedAscending_Click" IsChecked="{x:Bind local:Options.Instance.FileSortOptions.IsDateModifiedAscending, Mode=OneWay}"/>
+                        <ToggleMenuFlyoutItem Text="Date modified, descending" Click="FileSortDateModifiedDescending_Click" IsChecked="{x:Bind local:Options.Instance.FileSortOptions.IsDateModifiedDescending, Mode=OneWay}"/>
+                        <ToggleMenuFlyoutItem Text="Random" Click="FileSortRandom_Click" IsChecked="{x:Bind local:Options.Instance.FileSortOptions.IsRandom, Mode=OneWay}"/>
+                    </MenuFlyoutSubItem>
                 </MenuFlyout>
             </ListView.ContextFlyout>
             <ListView.ItemTemplate>
@@ -30,6 +56,8 @@
             <ListView.KeyboardAccelerators>
                 <KeyboardAccelerator Key="Right" Modifiers="None" Invoked="Keyboard_Right" />
                 <KeyboardAccelerator Key="Left" Modifiers="None" Invoked="Keyboard_Left"/>
+                <KeyboardAccelerator Key="Enter" Modifiers="None" Invoked="Keyboard_Enter"/>
+                <KeyboardAccelerator Key="Escape" Modifiers="None" Invoked="Keyboard_Escape"/>
             </ListView.KeyboardAccelerators>
         </ListView>
     </Grid>
