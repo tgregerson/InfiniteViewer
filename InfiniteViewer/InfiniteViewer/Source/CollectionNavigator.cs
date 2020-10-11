@@ -6,13 +6,9 @@ namespace InfiniteViewer
 {
     public class CollectionNavigator
     {
-        public CollectionNavigator(uint numLookAhead, uint numLookBehind)
+        public CollectionNavigator()
         {
-            _numAhead = numLookAhead;
-            _numBehind = numLookBehind;
-            _current = new ImageCollection();
-            _cache = new CollectionCache(2 * (int)(numLookAhead + numLookBehind));
-            _populator = new CachePopulator(_cache);
+            Recreate();
         }
 
         public async Task SetCurrentCollection(StorageFolder folder)
@@ -68,7 +64,16 @@ namespace InfiniteViewer
         {
             var currentFolder = _folderNavigator.Current();
             _cache.Flush();
+            Recreate();
             await SetCurrentCollection(currentFolder);
+        }
+
+        private void Recreate()
+        {
+            _numAhead = Options.CollectionPrefetchOptions.NumLookAhead;
+            _numBehind = Options.CollectionPrefetchOptions.NumLookBehind;
+            _cache = new CollectionCache(2 * (int)(_numAhead + _numBehind));
+            _populator = new CachePopulator(_cache);
         }
 
         private async Task<ImageCollection> PreloadCollection(StorageFolder folder)

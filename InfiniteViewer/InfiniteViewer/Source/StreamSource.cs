@@ -1,6 +1,7 @@
 ﻿using Microsoft.Toolkit.Collections;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage;
@@ -25,7 +26,7 @@ namespace InfiniteViewer
             for (int i = 0; i < folders.Count; ++i)
             {
                 var query = folders[i].CreateFileQueryWithOptions(options);
-                if (Options.Instance.FileSortOptions.IsRandom)
+                if (Options.FileSortOptions.IsRandom)
                     _queries[i] = new ShuffledFolderQuery(query);
                 else
                     _queries[i] = new TwoPhaseFolderQuery(query, kNumPrimaryImages);

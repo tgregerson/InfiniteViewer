@@ -51,13 +51,13 @@ namespace InfiniteViewer
             if (opts.IsDateModifiedAscending || opts.IsDateModifiedDescending)
                 sort.PropertyName = "System.DateModified";
             else
-                sort.PropertyName = "System.FileName";
+                sort.PropertyName = "System.ItemNameDisplay";
             return sort;
         }
 
         public static QueryOptions GetFileQueryOptions()
         {
-            var opts = Options.Instance.FileSortOptions;
+            var opts = Options.FileSortOptions;
             var fileOptions = new QueryOptions(CommonFileQuery.DefaultQuery, FileFilter());
             fileOptions.SortOrder.Clear();
             fileOptions.SortOrder.Add(MakeSortEntry(opts));
@@ -67,7 +67,7 @@ namespace InfiniteViewer
 
         public static QueryOptions GetFolderQueryOptions()
         {
-            var opts = Options.Instance.FolderSortOptions;
+            var opts = Options.FolderSortOptions;
             var folderOptions = new QueryOptions(CommonFolderQuery.DefaultQuery);
             folderOptions.FolderDepth = FolderDepth.Deep;
             folderOptions.SortOrder.Add(MakeSortEntry(opts));
@@ -240,14 +240,14 @@ namespace InfiniteViewer
             var actualWidth = ListViewMain.ActualWidth;
             if (ApplicationView.GetForCurrentView().TryEnterFullScreenMode())
             {
-                Options.Instance.ImageOptions.Width = actualWidth;
+                Options.ImageOptions.Width = actualWidth;
                 return true;
             }
             return false;
         }
         private void ExitFullScreen()
         {
-            Options.Instance.ImageOptions.Width = double.NaN;
+            Options.ImageOptions.Width = double.NaN;
             ApplicationView.GetForCurrentView().ExitFullScreenMode();
         }
 
@@ -267,7 +267,7 @@ namespace InfiniteViewer
         private async Task SetFileSortOrder(SortOrder order)
         {
             await _navSemaphore.WaitAsync();
-            Options.Instance.FileSortOptions.SetOrder(order);
+            Options.FileSortOptions.SetOrder(order);
             await _collectionNavigator.Reset();
             UpdateViewToCurrentCollection();
             _navSemaphore.Release();
@@ -343,6 +343,6 @@ namespace InfiniteViewer
         }
 
         private SemaphoreSlim _navSemaphore = new SemaphoreSlim(1, 1);
-        private CollectionNavigator _collectionNavigator = new CollectionNavigator(4, 2);
+        private CollectionNavigator _collectionNavigator = new CollectionNavigator();
     }
 }

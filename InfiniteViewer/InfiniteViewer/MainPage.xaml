@@ -14,7 +14,7 @@
             <ListView.Resources>
                 <DataTemplate x:Key="DataTemplateListViewMain" x:DataType="local:ImageElement">
                     <Grid x:Name="ImageGrid" Background="LightGray">
-                        <Image x:Name="MyImage" Source="{Binding Bitmap}" Width="{x:Bind Path=local:Options.Instance.ImageOptions.Width, Mode=OneWay}" />
+                        <Image x:Name="MyImage" Source="{Binding Bitmap}" Width="{x:Bind Path=local:Options.ImageOptions.Width, Mode=OneWay}" />
                     </Grid>
                 </DataTemplate>
             </ListView.Resources>
@@ -42,11 +42,11 @@
                     </MenuFlyoutItem>
                     <MenuFlyoutSeparator/>
                     <MenuFlyoutSubItem Name="FileSortingSubMenu" Text="File Sorting">
-                        <ToggleMenuFlyoutItem Text="Name, ascending" Click="FileSortNameAscending_Click" IsChecked="{x:Bind local:Options.Instance.FileSortOptions.IsNameAscending, Mode=OneWay}"/>
-                        <ToggleMenuFlyoutItem Text="Name, descending" Click="FileSortNameDescending_Click" IsChecked="{x:Bind local:Options.Instance.FileSortOptions.IsNameDescending, Mode=OneWay}"/>
-                        <ToggleMenuFlyoutItem Text="Date modified, ascending" Click="FileSortDateModifiedAscending_Click" IsChecked="{x:Bind local:Options.Instance.FileSortOptions.IsDateModifiedAscending, Mode=OneWay}"/>
-                        <ToggleMenuFlyoutItem Text="Date modified, descending" Click="FileSortDateModifiedDescending_Click" IsChecked="{x:Bind local:Options.Instance.FileSortOptions.IsDateModifiedDescending, Mode=OneWay}"/>
-                        <ToggleMenuFlyoutItem Text="Random" Click="FileSortRandom_Click" IsChecked="{x:Bind local:Options.Instance.FileSortOptions.IsRandom, Mode=OneWay}"/>
+                        <ToggleMenuFlyoutItem Text="Name, ascending" Click="FileSortNameAscending_Click" IsChecked="{x:Bind local:Options.FileSortOptions.IsNameAscending, Mode=OneWay}"/>
+                        <ToggleMenuFlyoutItem Text="Name, descending" Click="FileSortNameDescending_Click" IsChecked="{x:Bind local:Options.FileSortOptions.IsNameDescending, Mode=OneWay}"/>
+                        <ToggleMenuFlyoutItem Text="Date modified, ascending" Click="FileSortDateModifiedAscending_Click" IsChecked="{x:Bind local:Options.FileSortOptions.IsDateModifiedAscending, Mode=OneWay}"/>
+                        <ToggleMenuFlyoutItem Text="Date modified, descending" Click="FileSortDateModifiedDescending_Click" IsChecked="{x:Bind local:Options.FileSortOptions.IsDateModifiedDescending, Mode=OneWay}"/>
+                        <ToggleMenuFlyoutItem Text="Random" Click="FileSortRandom_Click" IsChecked="{x:Bind local:Options.FileSortOptions.IsRandom, Mode=OneWay}"/>
                     </MenuFlyoutSubItem>
                 </MenuFlyout>
             </ListView.ContextFlyout>

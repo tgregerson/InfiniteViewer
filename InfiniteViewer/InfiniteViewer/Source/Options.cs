@@ -79,12 +79,17 @@ namespace InfiniteViewer
         private double _width = double.NaN;
     }
 
+    public class CollectionPrefetchOptions
+    {
+        public uint NumLookAhead { get; set; } = 4;
+        public uint NumLookBehind { get; set; } = 2;
+    }
+
     public class Options
     {
-        public static Options Instance { get; } = new Options();
-
-        public SortOptions FileSortOptions { get; set; } = new SortOptions();
-        public SortOptions FolderSortOptions { get; set; } = new SortOptions();
-        public ImageOptions ImageOptions { get; set; } = new ImageOptions();
+        public static SortOptions FileSortOptions { get; set; } = new SortOptions();
+        public static SortOptions FolderSortOptions { get; set; } = new SortOptions();
+        public static ImageOptions ImageOptions { get; set; } = new ImageOptions();
+        public static CollectionPrefetchOptions CollectionPrefetchOptions { get; set; } = new CollectionPrefetchOptions();
     }
 }
