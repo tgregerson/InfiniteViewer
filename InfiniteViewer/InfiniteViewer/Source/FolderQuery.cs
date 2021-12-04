@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Search;
@@ -34,7 +33,6 @@ namespace InfiniteViewer
 
         protected async Task<StreamElement> OpenFileStream(StorageFile f)
         {
-            Debug.WriteLine("Opening file stream for " + f.DisplayName);
             StreamElement s = new StreamElement();
             s.File = f;
             s.Stream = await f.OpenReadAsync();
