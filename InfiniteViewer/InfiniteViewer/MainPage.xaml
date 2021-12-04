@@ -8,9 +8,9 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" PointerMoved="Background_PointerMoved">
         <Grid />
-        <ListView x:Name="ListViewMain" Margin="0,0,0,0" Padding="0,0,0,0" Loaded="Page_Loaded" SelectionMode="None" KeyboardAcceleratorPlacementMode="Hidden" ContainerContentChanging="ListViewMain_ContainerContentChanging">
+        <ListView x:Name="ListViewMain" Margin="0,0,0,0" Padding="0,0,0,0" Loaded="Page_Loaded" SelectionMode="None" KeyboardAcceleratorPlacementMode="Hidden" ContainerContentChanging="ListViewMain_ContainerContentChanging" IncrementalLoadingThreshold="200">
             <ListView.Resources>
                 <DataTemplate x:Key="DataTemplateListViewMain" x:DataType="local:ImageElement">
                     <Grid x:Name="ImageGrid" Background="LightGray">

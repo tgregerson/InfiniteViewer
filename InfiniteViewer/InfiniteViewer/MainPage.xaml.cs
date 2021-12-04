@@ -1,11 +1,7 @@
-﻿using Microsoft.Toolkit.Collections;
-using Microsoft.Toolkit.Uwp;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.Activation;
@@ -17,13 +13,9 @@ using Windows.UI.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using Windows.UI.Xaml.Input;
-using Windows.Foundation;
-using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media;
-using System.Collections.Concurrent;
 
 
 namespace InfiniteViewer
@@ -344,5 +336,38 @@ namespace InfiniteViewer
 
         private SemaphoreSlim _navSemaphore = new SemaphoreSlim(1, 1);
         private CollectionNavigator _collectionNavigator = new CollectionNavigator();
+
+        private void Background_PointerMoved(object sender, PointerRoutedEventArgs e)
+        {
+            Windows.UI.Xaml.Input.Pointer ptr = e.Pointer;
+            if (ptr.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Mouse)
+            {
+                Windows.UI.Input.PointerPoint ptrPt = e.GetCurrentPoint(this);
+                if (ptrPt.Properties.IsLeftButtonPressed)
+                {
+                    Windows.Foundation.Point position = ptrPt.Position;
+                    double y_delta_px = 0;
+                    if (_last_drag_y >= 0)
+                    {
+                        y_delta_px = position.Y - _last_drag_y;
+                        if (y_delta_px != 0)
+                        {
+                            Border border = VisualTreeHelper.GetChild(ListViewMain, 0) as Border;
+                            ScrollViewer scrollViewer = VisualTreeHelper.GetChild(border, 0) as ScrollViewer;
+                            double cur_offset = scrollViewer.VerticalOffset;
+                            scrollViewer.UpdateLayout();
+                            scrollViewer.ChangeView(null, cur_offset + 100 * y_delta_px, null);
+                        }
+                        Debug.WriteLine("Position: " + position.Y + " delta: " + y_delta_px);
+                    }
+                    _last_drag_y = position.Y;
+                } else
+                {
+                    _last_drag_y = -1;
+                }
+            }
+        }
+
+        private double _last_drag_y = -1;
     }
 }
