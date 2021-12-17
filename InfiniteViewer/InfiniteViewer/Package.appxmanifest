@@ -4,7 +4,7 @@
   <mp:PhoneIdentity PhoneProductId="3efc360b-74f9-4448-843e-0815d95c1b9d" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>InfiniteViewer</DisplayName>
-    <PublisherDisplayName>gregerso</PublisherDisplayName>
+    <PublisherDisplayName>Convex MacroLabs</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
   <Dependencies>
@@ -34,6 +34,8 @@
               <uap:FileType>.jpg</uap:FileType>
               <uap:FileType>.png</uap:FileType>
               <uap:FileType>.gif</uap:FileType>
+              <uap:FileType>.webp</uap:FileType>
+              <uap:FileType>.jpeg</uap:FileType>
             </uap:SupportedFileTypes>
           </uap3:FileTypeAssociation>
         </uap:Extension>

@@ -13,6 +13,7 @@ namespace InfiniteViewer
         {
             List<string> fileTypeFilter = new List<string>();
             fileTypeFilter.Add(".jpg");
+            fileTypeFilter.Add(".jpeg");
             fileTypeFilter.Add(".png");
             fileTypeFilter.Add(".bmp");
             fileTypeFilter.Add(".gif");
