@@ -3,6 +3,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage;
@@ -69,6 +70,7 @@ namespace InfiniteViewer
             }
             catch (Exception e)
             {
+                Debug.WriteLine("Open image exception for " + stream.File.Path + ": " + e.ToString());
                 if (!FileErrorHelper.SuppressImageErrors)
                 {
                     await FileErrorHelper.RaiseImageErrorDialog(stream.File.Path);
