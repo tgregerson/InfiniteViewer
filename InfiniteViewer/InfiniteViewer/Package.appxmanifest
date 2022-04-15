@@ -1,6 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3" IgnorableNamespaces="uap mp desktop rescap uap3">
-  <Identity Name="3efc360b-74f9-4448-843e-0815d95c1b9d" Publisher="CN=Convex MacroLabs" Version="1.0.1.0" />
+<Package 
+	xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" 
+	xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+	xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
+    xmlns:desktop5="http://schemas.microsoft.com/appx/manifest/desktop/windows10/5"
+	xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" 
+	xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" 
+	xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" 
+	xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+	xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+	IgnorableNamespaces="uap mp desktop desktop4 desktop5 rescap uap3 com">
+  <Identity Name="3efc360b-74f9-4448-843e-0815d95c1b9d" Publisher="CN=Convex MacroLabs" Version="1.0.3.1" />
   <mp:PhoneIdentity PhoneProductId="3efc360b-74f9-4448-843e-0815d95c1b9d" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>InfiniteViewer</DisplayName>
@@ -39,11 +49,31 @@
             </uap:SupportedFileTypes>
           </uap3:FileTypeAssociation>
         </uap:Extension>
+		<desktop4:Extension Category="windows.fileExplorerContextMenus">
+			  <desktop4:FileExplorerContextMenus>
+				  <desktop5:ItemType Type="Directory">
+					  <desktop5:Verb Id="BrowseWithInfiniteViewer" Clsid="D5DCBA98-BCF4-11EC-9D64-0242AC120002" />
+				  </desktop5:ItemType>
+				  <desktop5:ItemType Type="Directory\Background">
+					  <desktop5:Verb Id="BrowseWithInfiniteViewer" Clsid="D5DCBA98-BCF4-11EC-9D64-0242AC120002" />
+				  </desktop5:ItemType>
+				  <desktop5:ItemType Type="*">
+					  <desktop5:Verb Id="BrowseWithInfiniteViewer" Clsid="D5DCBA98-BCF4-11EC-9D64-0242AC120002" />
+				  </desktop5:ItemType>
+			  </desktop4:FileExplorerContextMenus>
+		  </desktop4:Extension>
+		  <com:Extension Category="windows.comServer">
+			  <com:ComServer>
+				  <com:SurrogateServer  DisplayName="Context menu verb handler">
+					  <com:Class Id="D5DCBA98-BCF4-11EC-9D64-0242AC120002" Path="ContextMenuDLL.dll" ThreadingModel="STA"/>
+				  </com:SurrogateServer>
+			  </com:ComServer>
+		  </com:Extension>
       </Extensions>
     </Application>
   </Applications>
   <Capabilities>
-    <Capability Name="internetClient" />
+	<rescap:Capability Name ="runFullTrust" />
     <rescap:Capability Name="broadFileSystemAccess" />
   </Capabilities>
 </Package>
