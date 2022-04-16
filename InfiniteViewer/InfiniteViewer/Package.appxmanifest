@@ -52,22 +52,22 @@
 		<desktop4:Extension Category="windows.fileExplorerContextMenus">
 			  <desktop4:FileExplorerContextMenus>
 				  <desktop5:ItemType Type="Directory">
-					  <desktop5:Verb Id="BrowseWithInfiniteViewer" Clsid="D5DCBA98-BCF4-11EC-9D64-0242AC120002" />
+					  <desktop5:Verb Id="BrowseWithIV2" Clsid="E1742A23-ED4B-4AED-9DD2-30963A98BFF7" />
+					  <desktop5:Verb Id="BrowseWithIV" Clsid="D5DCBA98-BCF4-11EC-9D64-0242AC120002" />
 				  </desktop5:ItemType>
 				  <desktop5:ItemType Type="Directory\Background">
-					  <desktop5:Verb Id="BrowseWithInfiniteViewer" Clsid="D5DCBA98-BCF4-11EC-9D64-0242AC120002" />
-				  </desktop5:ItemType>
-				  <desktop5:ItemType Type="*">
-					  <desktop5:Verb Id="BrowseWithInfiniteViewer" Clsid="D5DCBA98-BCF4-11EC-9D64-0242AC120002" />
+					  <desktop5:Verb Id="BrowseWithIV2" Clsid="E1742A23-ED4B-4AED-9DD2-30963A98BFF7" />
+					  <desktop5:Verb Id="BrowseWithIV" Clsid="D5DCBA98-BCF4-11EC-9D64-0242AC120002" />
 				  </desktop5:ItemType>
 			  </desktop4:FileExplorerContextMenus>
 		  </desktop4:Extension>
 		  <com:Extension Category="windows.comServer">
 			  <com:ComServer>
 				  <com:SurrogateServer  DisplayName="Context menu verb handler">
+					  <com:Class Id="E1742A23-ED4B-4AED-9DD2-30963A98BFF7" Path="InfiniteViewerContextMenu.dll" ThreadingModel="STA"/>
 					  <com:Class Id="D5DCBA98-BCF4-11EC-9D64-0242AC120002" Path="ContextMenuDLL.dll" ThreadingModel="STA"/>
 				  </com:SurrogateServer>
-			  </com:ComServer>
+				  </com:ComServer>
 		  </com:Extension>
       </Extensions>
     </Application>
