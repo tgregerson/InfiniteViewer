@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include <libloaderapi.h>
+#include <shellapi.h>
 #include <shlwapi.h>
 #include <shobjidl_core.h>
 #include <wrl/client.h>
@@ -22,9 +23,9 @@ using namespace Microsoft::WRL;
 // This UUID must match the com server in the app manifest. It can be randomly generated.
 #define __UUID_STR "E1742A23-ED4B-4AED-9DD2-30963A98BFF7"
 
-constexpr auto __MENU_TITLE = L"InfiniteViewer";
+constexpr auto __MENU_TITLE = L"Open in InfiniteViewer";
 constexpr auto kExecutable = L"C:\\Users\\conve\\AppData\\Local\\Microsoft\\WindowsApps\\InfiniteViewer.exe";
-//constexpr auto kExecutable = L"%HOMEDRIVE%%HOMEPATH%\\AppData\\Local\\Microsoft\\WindowsApps\\InfiniteViewer.exe";
+//constexpr auto kExecutable = L"%LOCALAPPDATA%\\Microsoft\\WindowsApps\\InfiniteViewer.exe";
 constexpr auto kShellPath = L"Shell:AppsFolder\3efc360b-74f9-4448-843e-0815d95c1b9d_3rjdpzxdvax94!App";
 
 std::wstring GetLastErrorAsString()
@@ -88,15 +89,35 @@ HRESULT GetExecutablePath(std::wstring* out_path, HWND parent) {
     std::wstring dir;
     RETURN_IF_FAILED(GetExecutableDir(&dir, parent));
     *out_path = dir + L"\\InfiniteViewer.exe";
-    *out_path = kExecutable;
     return S_OK;
 }
 
 HRESULT GetIconPath(std::wstring* out_path, HWND parent) {
-    std::wstring executable;
-    RETURN_IF_FAILED(GetExecutablePath(&executable, parent));
-    *out_path = executable + L",-1";
+    std::wstring dir;
+    RETURN_IF_FAILED(GetExecutableDir(&dir, parent));
+    *out_path = dir + L"\\icon.ico";
     return S_OK;
+}
+
+HRESULT RunExecutable(HWND parent, std::wstring itemName) {
+    std::wstring icon_path;
+    RETURN_IF_FAILED(GetIconPath(&icon_path, parent));
+    MessageBoxW(nullptr, icon_path.c_str(), L"Icon Path", MB_OK);
+
+    std::wstring executable_path;
+    RETURN_IF_FAILED(GetExecutablePath(&executable_path, parent));
+
+    STARTUPINFO si = {};
+    PROCESS_INFORMATION pi = {};
+
+    std::wstring params = itemName;
+    std::wstring cl_args = executable_path + L" " + params;
+    std::wstring debug_msg = L"Command:\n" + executable_path + L"\n\nParams:\n" + params;
+    MessageBoxW(parent, debug_msg.c_str(), L"Executing...", MB_OK);
+    if ((INT_PTR)ShellExecuteW(parent, L"open", L"InfiniteViewer.exe", params.c_str(), nullptr, SW_SHOWNORMAL) > 32) {
+        return S_OK;
+    }
+    return E_ABORT;
 }
 
 class ExplorerCommandBase : public RuntimeClass<RuntimeClassFlags<ClassicCom>, IExplorerCommand, IObjectWithSite> {
@@ -117,10 +138,13 @@ public:
     }
     IFACEMETHODIMP GetIcon(_In_opt_ IShellItemArray*, _Outptr_result_nullonfailure_ PWSTR* icon)
     {
-        *icon = nullptr;
         std::wstring val;
         RETURN_IF_FAILED(GetIconPath(&val, nullptr));
         SHStrDupW(val.c_str(), icon);
+        if (*icon == 0) {
+            return E_NOTIMPL;
+        }
+        // MessageBoxW(nullptr, val.c_str(), L"Icon Path", MB_OK);
         return S_OK;
     }
     IFACEMETHODIMP GetToolTip(_In_opt_ IShellItemArray*, _Outptr_result_nullonfailure_ PWSTR* infoTip)
@@ -178,12 +202,7 @@ public:
             RETURN_IF_FAILED(oleWindow->GetWindow(&parent));
         }
 
-
-
         if (selection) {
-            std::wstring executable_path;
-            RETURN_IF_FAILED(GetExecutablePath(&executable_path, parent));
-
             DWORD count;
             RETURN_IF_FAILED(selection->GetCount(&count));
             for (DWORD i = 0; i < count; ++i) {
@@ -192,31 +211,9 @@ public:
                 selection->GetItemAt(i, &psi);
                 RETURN_IF_FAILED(psi->GetDisplayName(SIGDN_FILESYSPATH, &itemName));
 
-                executable_path = kExecutable;
-                std::wstring command;
-                if (command.find(L" ") != std::wstring::npos) {
-                    command = L"\"" + executable_path + L"\"";
-                }
-                else {
-                    command = executable_path;
-                }
-
-                STARTUPINFO si = {};
-                PROCESS_INFORMATION pi = {};
-
-                std::wstring params = command + L" " + itemName;
-                // MessageBoxW(parent, params.c_str(), command.c_str(), MB_OK);
-                if (CreateProcessW(
-                    command.c_str(), (LPWSTR)params.c_str(),
-                    nullptr, nullptr, false, 0, nullptr, nullptr, &si, &pi)) {
-                    // MessageBoxW(parent, L"CreateProcessW OK", L"CreateProcessW OK", MB_OK);
-                    WaitForSingleObject(pi.hProcess, INFINITE);
-                    CloseHandle(pi.hThread);
-                    CloseHandle(pi.hProcess);
-                }
-                else {
+                if (RunExecutable(parent, itemName) != S_OK) {
                     const std::wstring error = GetLastErrorAsString();
-                    MessageBoxW(parent, L"Failed to CreateProcessW", error.c_str(), MB_OK);
+                    MessageBoxW(parent, error.c_str(), L"Failed to execute", MB_OK);
                 }
             }
         }
