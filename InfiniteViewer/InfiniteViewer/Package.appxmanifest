@@ -10,7 +10,7 @@
 	xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
 	xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
 	IgnorableNamespaces="uap mp desktop desktop4 desktop5 rescap uap3 com">
-  <Identity Name="3efc360b-74f9-4448-843e-0815d95c1b9d" Publisher="CN=Convex MacroLabs" Version="1.0.3.1" />
+  <Identity Name="3efc360b-74f9-4448-843e-0815d95c1b9d" Publisher="CN=Convex MacroLabs" Version="1.0.4.1" />
   <mp:PhoneIdentity PhoneProductId="3efc360b-74f9-4448-843e-0815d95c1b9d" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>InfiniteViewer</DisplayName>

@@ -16,34 +16,17 @@
 
 using namespace Microsoft::WRL;
 
-// This implements a basic "Open With..." context menu entry.
-
 // Update these for each application
 //
 // This UUID must match the com server in the app manifest. It can be randomly generated.
 #define __UUID_STR "E1742A23-ED4B-4AED-9DD2-30963A98BFF7"
+constexpr auto kMenuTitle = L"Open in InfiniteViewer";
 
-constexpr auto __MENU_TITLE = L"Open in InfiniteViewer";
-constexpr auto kExecutable = L"C:\\Users\\conve\\AppData\\Local\\Microsoft\\WindowsApps\\InfiniteViewer.exe";
-//constexpr auto kExecutable = L"%LOCALAPPDATA%\\Microsoft\\WindowsApps\\InfiniteViewer.exe";
-constexpr auto kShellPath = L"Shell:AppsFolder\3efc360b-74f9-4448-843e-0815d95c1b9d_3rjdpzxdvax94!App";
-
-std::wstring GetLastErrorAsString()
-{
-    DWORD errorMessageID = ::GetLastError();
-    if (errorMessageID == 0) {
-        return std::wstring(L"No error");
-    }
-
-    LPWSTR messageBuffer = nullptr;
-    size_t size = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&messageBuffer, 0, NULL);
-
-    std::wstring message(messageBuffer, size);
-    LocalFree(messageBuffer);
-
-    return message;
-}
+// Paths are relative to the location of the DLL in the package.
+constexpr auto kExecutableRelativePath = L"InfiniteViewer.exe";
+// It might also be possible to use Assets\\Square44x44Logo.scale-100.png to avoid the need to
+// manually update the icon file.
+constexpr auto kIconRelativePath = L"icon.ico";
 
 BOOL APIENTRY DllMain(HMODULE hModule,
     DWORD ul_reason_for_call,
@@ -59,7 +42,21 @@ BOOL APIENTRY DllMain(HMODULE hModule,
     return TRUE;
 }
 
-HRESULT GetExecutableDir(std::wstring* out_path, HWND parent) {
+std::wstring GetLastErrorAsString()
+{
+    DWORD errorMessageID = ::GetLastError();
+    if (errorMessageID == 0) {
+        return std::wstring(L"No error");
+    }
+    LPWSTR messageBuffer = nullptr;
+    size_t size = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&messageBuffer, 0, NULL);
+    std::wstring message(messageBuffer, size);
+    LocalFree(messageBuffer);
+    return message;
+}
+
+HRESULT GetRootDir(std::wstring* out_path, HWND parent) {
     wchar_t path[MAX_PATH];
     HMODULE hm = NULL;
 
@@ -67,54 +64,50 @@ HRESULT GetExecutableDir(std::wstring* out_path, HWND parent) {
         GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
         (LPWSTR) &DllMain, &hm) == 0)
     {
-        int ret = GetLastError();
-        fprintf(stderr, "GetModuleHandle failed, error = %d\n", ret);
-        MessageBox(parent, L"GetModuleHandle failed", __MENU_TITLE, MB_OK);
+        std::wstring error = GetLastErrorAsString() + L" - GetModuleHandle";
+        MessageBoxW(parent, error.c_str(), kMenuTitle, MB_OK);
         return E_FAIL;
     }
     if (GetModuleFileNameW(hm, path, sizeof(path) / 2) == 0)
     {
-        int ret = GetLastError();
-        fprintf(stderr, "GetModuleFileName failed, error = %d\n", ret);
-        MessageBox(parent, L"GetModuleFileName failed", __MENU_TITLE, MB_OK);
+        std::wstring error = GetLastErrorAsString() + L" - GetModuleFileName";
+        MessageBoxW(parent, error.c_str(), kMenuTitle, MB_OK);
         return E_FAIL;
     }
     const std::wstring path_str(path);
     const std::wstring dir = path_str.substr(0, path_str.find_last_of(L"/\\"));
-    *out_path = dir;
+    *out_path = dir + L"\\";
     return S_OK;
 }
 
 HRESULT GetExecutablePath(std::wstring* out_path, HWND parent) {
     std::wstring dir;
-    RETURN_IF_FAILED(GetExecutableDir(&dir, parent));
-    *out_path = dir + L"\\InfiniteViewer.exe";
+    RETURN_IF_FAILED(GetRootDir(&dir, parent));
+    *out_path = dir + kExecutableRelativePath;
     return S_OK;
 }
 
 HRESULT GetIconPath(std::wstring* out_path, HWND parent) {
     std::wstring dir;
-    RETURN_IF_FAILED(GetExecutableDir(&dir, parent));
-    *out_path = dir + L"\\icon.ico";
+    RETURN_IF_FAILED(GetRootDir(&dir, parent));
+    *out_path = dir + kIconRelativePath;
     return S_OK;
 }
 
 HRESULT RunExecutable(HWND parent, std::wstring itemName) {
-    std::wstring icon_path;
-    RETURN_IF_FAILED(GetIconPath(&icon_path, parent));
-    MessageBoxW(nullptr, icon_path.c_str(), L"Icon Path", MB_OK);
+    // std::wstring icon_path;
+    // RETURN_IF_FAILED(GetIconPath(&icon_path, parent));
+    // MessageBoxW(nullptr, icon_path.c_str(), L"Icon Path", MB_OK);
 
-    std::wstring executable_path;
-    RETURN_IF_FAILED(GetExecutablePath(&executable_path, parent));
+    const std::wstring executable_path = kExecutableRelativePath;
 
     STARTUPINFO si = {};
     PROCESS_INFORMATION pi = {};
 
     std::wstring params = itemName;
-    std::wstring cl_args = executable_path + L" " + params;
-    std::wstring debug_msg = L"Command:\n" + executable_path + L"\n\nParams:\n" + params;
-    MessageBoxW(parent, debug_msg.c_str(), L"Executing...", MB_OK);
-    if ((INT_PTR)ShellExecuteW(parent, L"open", L"InfiniteViewer.exe", params.c_str(), nullptr, SW_SHOWNORMAL) > 32) {
+    // std::wstring debug_msg = L"Command:\n" + executable_path + L"\n\nParams:\n" + params;
+    // MessageBoxW(parent, debug_msg.c_str(), L"Executing...", MB_OK);
+    if ((INT_PTR)ShellExecuteW(parent, L"open", executable_path.c_str(), params.c_str(), nullptr, SW_SHOWNORMAL) > 32) {
         return S_OK;
     }
     return E_ABORT;
@@ -144,7 +137,6 @@ public:
         if (*icon == 0) {
             return E_NOTIMPL;
         }
-        // MessageBoxW(nullptr, val.c_str(), L"Icon Path", MB_OK);
         return S_OK;
     }
     IFACEMETHODIMP GetToolTip(_In_opt_ IShellItemArray*, _Outptr_result_nullonfailure_ PWSTR* infoTip)
@@ -193,7 +185,7 @@ protected:
 
 class __declspec(uuid(__UUID_STR)) ExplorerCommandHandler final : public ExplorerCommandBase {
 public:
-    const wchar_t* Title() override { return __MENU_TITLE; }
+    const wchar_t* Title() override { return kMenuTitle; }
     HRESULT DoInvoke(_In_opt_ IShellItemArray* selection) override {
         HWND parent = nullptr;
         if (m_site) {
